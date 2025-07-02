@@ -20,6 +20,15 @@ class Post {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'title': title,
+      'body': body,
+    };
+  }
+
   Post copyWith({
     int? id,
     int? userId,

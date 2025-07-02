@@ -9,6 +9,7 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     // Fetch posts when the screen is first loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<HomeProvider>(context, listen: false).fetchPosts();
@@ -17,59 +18,78 @@ class LandingScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Posts'),
+        automaticallyImplyLeading: false,
         actions: [
-          IconButton(
+         /* IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: () => Provider.of<HomeProvider>(context, listen: false).fetchPosts(),
-          ),
+            onPressed: () async {
+              try {
+                await Provider.of<HomeProvider>(context, listen: false).fetchPosts();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Posts refreshed successfully')),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to refresh: $e')),
+                );
+              }
+            },
+          ),*/
         ],
       ),
       body: Consumer<HomeProvider>(
         builder: (context, provider, child) {
-          if (provider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (provider.posts.isEmpty) {
-            return const Center(child: Text('No posts available'));
-          }
-
-          if (provider.errorMessage != null) {
-            return Center(child: Text(provider.errorMessage!));
-          }
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(8),
-            itemCount: provider.posts.length,
-            itemBuilder: (context, index) {
-              final post = provider.posts[index];
-              return Card(
-                margin: const EdgeInsets.symmetric(vertical: 8),
-                child: ListTile(
-                  title: Text(
-                    post.title,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(post.body),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: Colors.blue),
-                        onPressed: () => _showEditBottomSheet(context, provider, post, index),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => provider.deletePost(index),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: () => provider.fetchPosts(),
+            child: _buildPostList(context, provider),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildPostList(BuildContext context, HomeProvider provider) {
+    if (provider.isLoading && provider.posts.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (provider.errorMessage != null) {
+      return Center(child: Text(provider.errorMessage!));
+    }
+
+    if (provider.posts.isEmpty) {
+      return const Center(child: Text('No posts available'));
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(8),
+      itemCount: provider.posts.length,
+      itemBuilder: (context, index) {
+        final post = provider.posts[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          child: ListTile(
+            title: Text(
+              post.title,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Text(post.body),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blue),
+                  onPressed: () => _showEditBottomSheet(context, provider, post, index),
+                ),
+               /* IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _confirmDelete(context, provider, index),
+                ),*/
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -123,13 +143,22 @@ class LandingScreen extends StatelessWidget {
                   child: const Text('Cancel'),
                 ),
                 ElevatedButton(
-                  onPressed: () {
-                    final updatedPost = post.copyWith(
-                      title: titleController.text,
-                      body: bodyController.text,
-                    );
-                    provider.updatePost(index, updatedPost);
-                    Navigator.pop(context);
+                  onPressed: () async {
+                    try {
+                      final updatedPost = post.copyWith(
+                        title: titleController.text,
+                        body: bodyController.text,
+                      );
+                      await provider.updatePost(index, updatedPost);
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Post updated successfully')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update: $e')),
+                      );
+                    }
                   },
                   child: const Text('Save'),
                 ),
@@ -140,5 +169,38 @@ class LandingScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context, HomeProvider provider, int index) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        await provider.deletePost(index);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Post deleted successfully')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: $e')),
+        );
+      }
+    }
   }
 }
