@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:flut_dev_home_assignment/provider/home_provider.dart';
 
 import '../../model/post.dart';
+import '../../route.dart';
 
 class LandingScreen extends StatelessWidget {
   const LandingScreen({super.key});
@@ -64,32 +65,45 @@ class LandingScreen extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.all(8),
       itemCount: provider.posts.length,
-      itemBuilder: (context, index) {
-        final post = provider.posts[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 8),
-          child: ListTile(
-            title: Text(
-              post.title,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Text(post.body),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () => _showEditBottomSheet(context, provider, post, index),
+        // In your ListView.builder's itemBuilder:
+        itemBuilder: (context, index) {
+          final post = provider.posts[index];
+          return GestureDetector(
+            onTap: () => _navigateToPostDetails(context, post),
+            child: Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              child: ListTile(
+                title: Text(
+                  post.title,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
-               /* IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _confirmDelete(context, provider, index),
-                ),*/
-              ],
+                subtitle: Text(post.body),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit, color: Colors.blue),
+                      onPressed: () => _showEditBottomSheet(context, provider, post, index),
+                    ),
+                    /*IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () => _confirmDelete(context, provider, index),
+                    ),*/
+                  ],
+                ),
+              ),
             ),
-          ),
-        );
-      },
+          );
+        }
+
+    );
+  }
+
+  void _navigateToPostDetails(BuildContext context, Post post) {
+    Navigator.pushNamed(
+      context,
+      RouteName.postDetailsScreen,
+      arguments: post, // Pass the entire post object
     );
   }
 

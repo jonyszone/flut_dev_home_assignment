@@ -1,10 +1,12 @@
 import 'package:flut_dev_home_assignment/ui/home/landing_screen.dart';
+import 'package:flut_dev_home_assignment/ui/home/post_details_screen.dart';
 import 'package:flut_dev_home_assignment/ui/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 
 class RouteName {
   static String splashScreen = "/splash_screen";
   static String landingScreen= '/landing_screen';
+  static String postDetailsScreen= '/post_details_screen';
 }
 
 
@@ -12,6 +14,7 @@ Map<String, WidgetBuilder> routes({Object? arg}) =>
     {
       RouteName.splashScreen: (context) => const SplashScreen(),
       RouteName.landingScreen: (context) => const LandingScreen(),
+      RouteName.postDetailsScreen: (context) => const PostDetailsScreen(),
     };
 
 Route<dynamic> onGenerateRoute(RouteSettings routeSettings) {
