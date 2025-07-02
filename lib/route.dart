@@ -13,7 +13,7 @@ class RouteName {
 Map<String, WidgetBuilder> routes({Object? arg}) =>
     {
       RouteName.splashScreen: (context) => const SplashScreen(),
-      RouteName.landingScreen: (context) => const LandingScreen(),
+      RouteName.landingScreen: (context) =>  LandingScreen(),
       RouteName.postDetailsScreen: (context) => const PostDetailsScreen(),
     };
 

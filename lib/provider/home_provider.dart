@@ -15,6 +15,20 @@ class HomeProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  List<Post> _filteredPosts = [];
+  String _searchQuery = '';
+  bool _showSearch = false;
+  List<Post> get filteredPosts => _searchQuery.isEmpty ? _posts : _filteredPosts;
+  String get searchQuery => _searchQuery;
+  bool get showSearch => _showSearch;
+  int get totalPostsCount => _posts.length;
+  int get displayedPostsCount => filteredPosts.length;
+
+  void toggleSearch() {
+    _showSearch = !_showSearch;
+    notifyListeners();
+  }
+
   Future<void> fetchPosts() async {
     _isLoading = true;
     notifyListeners();
@@ -92,4 +106,15 @@ class HomeProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Add this method
+  void filterPosts(String query) {
+    _searchQuery = query.toLowerCase();
+    _filteredPosts = _posts.where((post) {
+      return post.title.toLowerCase().contains(_searchQuery) ||
+          post.body.toLowerCase().contains(_searchQuery);
+    }).toList();
+    notifyListeners();
+  }
+
 }

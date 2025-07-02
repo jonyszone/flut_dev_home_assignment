@@ -1,16 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flut_dev_home_assignment/provider/home_provider.dart';
-
 import '../../model/post.dart';
 import '../../route.dart';
 
 class LandingScreen extends StatelessWidget {
-  const LandingScreen({super.key});
+   LandingScreen({super.key});
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-
     // Fetch posts when the screen is first loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<HomeProvider>(context, listen: false).fetchPosts();
@@ -18,24 +17,53 @@ class LandingScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Posts'),
+        title: Consumer<HomeProvider>(
+          builder: (context, provider, child) {
+            return provider.showSearch
+                ? TextField(
+              controller: _searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'Search posts...',
+                border: InputBorder.none,
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              ),
+              style: const TextStyle(color: Colors.white),
+              onChanged: (value) => provider.filterPosts(value),
+            )
+                : const Text('Posts');
+          },
+        ),
         automaticallyImplyLeading: false,
         actions: [
-         /* IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () async {
-              try {
-                await Provider.of<HomeProvider>(context, listen: false).fetchPosts();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Posts refreshed successfully')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Failed to refresh: $e')),
+          Consumer<HomeProvider>(
+            builder: (context, provider, child) {
+              if (!provider.showSearch) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+                  child: Text(
+                    '${provider.displayedPostsCount}/${provider.totalPostsCount}',
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 );
               }
+              return const SizedBox();
             },
-          ),*/
+          ),
+          Consumer<HomeProvider>(
+            builder: (context, provider, child) {
+              return IconButton(
+                icon: Icon(provider.showSearch ? Icons.close : Icons.search),
+                onPressed: () {
+                  if (provider.showSearch) {
+                    _searchController.clear();
+                    provider.filterPosts('');
+                  }
+                  provider.toggleSearch();
+                },
+              );
+            },
+          ),
         ],
       ),
       body: Consumer<HomeProvider>(
@@ -58,44 +86,62 @@ class LandingScreen extends StatelessWidget {
       return Center(child: Text(provider.errorMessage!));
     }
 
-    if (provider.posts.isEmpty) {
-      return const Center(child: Text('No posts available'));
+    final displayPosts = provider.filteredPosts;
+
+    if (displayPosts.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.search_off, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              provider.searchQuery.isEmpty
+                  ? 'No posts available'
+                  : 'No matching posts found',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            if (provider.searchQuery.isNotEmpty)
+              TextButton(
+                onPressed: () {
+                  _searchController.clear();
+                  provider.filterPosts('');
+                },
+                child: const Text('Clear search'),
+              ),
+          ],
+        ),
+      );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.all(8),
-      itemCount: provider.posts.length,
-        // In your ListView.builder's itemBuilder:
-        itemBuilder: (context, index) {
-          final post = provider.posts[index];
-          return GestureDetector(
-            onTap: () => _navigateToPostDetails(context, post),
-            child: Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              child: ListTile(
-                title: Text(
-                  post.title,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(post.body),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit, color: Colors.blue),
-                      onPressed: () => _showEditBottomSheet(context, provider, post, index),
-                    ),
-                    /*IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _confirmDelete(context, provider, index),
-                    ),*/
-                  ],
-                ),
+      itemCount: displayPosts.length,
+      itemBuilder: (context, index) {
+        final post = displayPosts[index];
+        return GestureDetector(
+          onTap: () => _navigateToPostDetails(context, post),
+          child: Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            child: ListTile(
+              title: Text(
+                post.title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(post.body),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () => _showEditBottomSheet(context, provider, post, index),
+                  ),
+                ],
               ),
             ),
-          );
-        }
-
+          ),
+        );
+      },
     );
   }
 
@@ -103,7 +149,7 @@ class LandingScreen extends StatelessWidget {
     Navigator.pushNamed(
       context,
       RouteName.postDetailsScreen,
-      arguments: post, // Pass the entire post object
+      arguments: post,
     );
   }
 
@@ -183,38 +229,5 @@ class LandingScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _confirmDelete(BuildContext context, HomeProvider provider, int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Post'),
-        content: const Text('Are you sure you want to delete this post?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        await provider.deletePost(index);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Post deleted successfully')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: $e')),
-        );
-      }
-    }
   }
 }
