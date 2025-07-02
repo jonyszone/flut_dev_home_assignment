@@ -1,3 +1,4 @@
+import 'package:flut_dev_home_assignment/provider/home_provider.dart';
 import 'package:flut_dev_home_assignment/provider/theme_provider.dart';
 import 'package:flut_dev_home_assignment/route.dart';
 import 'package:flutter/material.dart';
@@ -10,8 +11,7 @@ void main() async {
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => ThemeProvider()..initialize()),
-      /*ChangeNotifierProvider(create: (_) => NavigationProvider()),
-      ChangeNotifierProvider(create: (_) => AppProvider()),*/
+      ChangeNotifierProvider(create: (_) => HomeProvider()),
     ],
     child: const MyApp(),
   ));
