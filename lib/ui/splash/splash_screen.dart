@@ -11,16 +11,18 @@ class SplashScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     Provider.of<ThemeProvider>(context, listen: false).splashInit(context);
     return  Scaffold(
-      body: SizedBox(
-        width: double.infinity, // Set the width to fill the screen horizontally
-        height: double.infinity, // Set the height to fill the screen vertically
-        child: Image.asset(
-          AppIcon.icApp,
-          fit: BoxFit.cover, // Use BoxFit.cover to scale the image to cover the entire Container
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            FlutterLogo(
+              size: 150.0,
+            ),
+            SizedBox(height: 20),
+            SizedBox(width: 150.0, child: LinearProgressIndicator()),
+          ],
         ),
-      ) /*Center(
-        child: Image.asset(AppIcon.icApp),
-      ),*/
+      ),
     );
   }
 }
