@@ -16,6 +16,10 @@ class LandingScreen extends StatelessWidget {
     });
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showCreateBottomSheet(context),
+        child: const Icon(Icons.add),
+      ),
       appBar: AppBar(
         title: Consumer<HomeProvider>(
           builder: (context, provider, child) {
@@ -230,4 +234,91 @@ class LandingScreen extends StatelessWidget {
       ),
     );
   }
+
+   void _showCreateBottomSheet(BuildContext context) {
+     final titleController = TextEditingController();
+     final bodyController = TextEditingController();
+     final provider = Provider.of<HomeProvider>(context, listen: false);
+
+     showModalBottomSheet(
+       context: context,
+       isScrollControlled: true,
+       builder: (context) => Padding(
+         padding: EdgeInsets.only(
+           bottom: MediaQuery.of(context).viewInsets.bottom,
+           left: 16,
+           right: 16,
+           top: 16,
+         ),
+         child: Column(
+           mainAxisSize: MainAxisSize.min,
+           children: [
+             const Text(
+               'Create Post',
+               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+             ),
+             const SizedBox(height: 16),
+             TextField(
+               controller: titleController,
+               decoration: const InputDecoration(
+                 labelText: 'Title',
+                 border: OutlineInputBorder(),
+               ),
+             ),
+             const SizedBox(height: 12),
+             TextField(
+               controller: bodyController,
+               maxLines: 3,
+               decoration: const InputDecoration(
+                 labelText: 'Body',
+                 border: OutlineInputBorder(),
+               ),
+             ),
+             const SizedBox(height: 20),
+             Row(
+               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+               children: [
+                 ElevatedButton(
+                   onPressed: () => Navigator.pop(context),
+                   style: ElevatedButton.styleFrom(backgroundColor: Colors.grey),
+                   child: const Text('Cancel'),
+                 ),
+                 ElevatedButton(
+                   onPressed: () async {
+                     if (titleController.text.isEmpty || bodyController.text.isEmpty) {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('Please fill all fields')),
+                       );
+                       return;
+                     }
+
+                     try {
+                       final newPost = Post(
+                         userId: 1, // placeholder or dynamic
+                         id: 0, // jsonplaceholder will assign
+                         title: titleController.text,
+                         body: bodyController.text,
+                       );
+                       await provider.createPost(newPost);
+                       Navigator.pop(context);
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('Post created successfully')),
+                       );
+                     } catch (e) {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(content: Text('Failed to create post: $e')),
+                       );
+                     }
+                   },
+                   child: const Text('Create'),
+                 ),
+               ],
+             ),
+             const SizedBox(height: 16),
+           ],
+         ),
+       ),
+     );
+   }
+
 }

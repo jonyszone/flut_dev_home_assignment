@@ -81,6 +81,35 @@ class HomeProvider with ChangeNotifier {
     }
   }
 
+  Future<void> createPost(Post newPost) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/posts'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode(newPost.toJson()),
+      );
+
+      if (response.statusCode == 201) {
+        final createdPost = Post.fromJson(json.decode(response.body));
+        _posts.insert(0, createdPost); // Insert at top
+        _errorMessage = null;
+      } else {
+        throw Exception('Failed to create post');
+      }
+    } catch (e) {
+      _errorMessage = 'Failed to create post: ${e.toString()}';
+      if (kDebugMode) print(e);
+      rethrow;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+
   Future<void> deletePost(int index) async {
     final postId = _posts[index].id;
     _isLoading = true;
