@@ -1,11 +1,13 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 
 import '../model/post.dart';
 
 class HomeProvider with ChangeNotifier {
+  final Box<Post> _postsBox = Hive.box<Post>('postsBox');
   List<Post> _posts = [];
   bool _isLoading = false;
   String? _errorMessage;
@@ -39,11 +41,15 @@ class HomeProvider with ChangeNotifier {
         _posts = (json.decode(response.body) as List)
             .map((data) => Post.fromJson(data))
             .toList();
+        // Save to Hive
+        await _postsBox.clear();
+        await _postsBox.addAll(_posts);
         _errorMessage = null;
       } else {
         throw Exception('Failed to load posts');
       }
     } catch (e) {
+      _posts = _postsBox.values.toList();
       _errorMessage = 'Failed to load posts: ${e.toString()}';
       if (kDebugMode) print(e);
     } finally {
@@ -65,6 +71,7 @@ class HomeProvider with ChangeNotifier {
 
       if (response.statusCode == 200) {
         _posts[index] = Post.fromJson(json.decode(response.body));
+        await _postsBox.putAt(index, _posts[index]);
         _errorMessage = null;
       } else {
         throw Exception('Failed to update post');
@@ -95,6 +102,7 @@ class HomeProvider with ChangeNotifier {
       if (response.statusCode == 201) {
         final createdPost = Post.fromJson(json.decode(response.body));
         _posts.insert(0, createdPost); // Insert at top
+        await _postsBox.add(createdPost);
         _errorMessage = null;
       } else {
         throw Exception('Failed to create post');
@@ -121,6 +129,7 @@ class HomeProvider with ChangeNotifier {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
+        await _postsBox.deleteAt(index);
         _posts.removeAt(index);
         _errorMessage = null;
       } else {

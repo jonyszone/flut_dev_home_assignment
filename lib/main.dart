@@ -2,12 +2,16 @@ import 'package:flut_dev_home_assignment/provider/home_provider.dart';
 import 'package:flut_dev_home_assignment/provider/theme_provider.dart';
 import 'package:flut_dev_home_assignment/route.dart';
 import 'package:flutter/material.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:provider/provider.dart';
 
-import 'config/app_theme.dart';
+import 'model/post.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Initialize Hive
+  openAppDatabase();
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (_) => ThemeProvider()..initialize()),
@@ -18,7 +22,7 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,5 +36,13 @@ class MyApp extends StatelessWidget {
           initialRoute: RouteName.splashScreen,
           onGenerateRoute: onGenerateRoute);
     });
+  }
+}
+
+Future<void> openAppDatabase() async {
+  await Hive.initFlutter();
+  Hive.registerAdapter(PostAdapter());
+  if (!Hive.isBoxOpen('postsBox')) {
+    await Hive.openBox<Post>('postsBox');
   }
 }
